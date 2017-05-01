@@ -1,0 +1,4 @@
+# Git Ignore File
+target/
+.history
+.cache
