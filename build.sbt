@@ -10,7 +10,6 @@ lazy val root = (project in file(".")).
         name := "progress",
         scalacOptions += "-deprecation",
         libraryDependencies ++= Seq(
-            "org.postgresql" % "postgresql" % "42.0.0",
             "joda-time" % "joda-time" % "2.9.9"
         )
     )

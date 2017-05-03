@@ -1,51 +1,39 @@
-package progressbar
+package progress.progressbar
 
-import scala.math._
 import org.joda.time._
 import scala.sys.process._
 
-class ProgressThread(val state: ProgressState, val style: ProgressBarStyle, val updateInterval: Long) extends Runnable {
+class ProgressThread( val state: ProgressState, val style: ProgressBarStyle, val updateInterval: Long ) extends Runnable {
 
-    @volatile private var running: Boolean = _
-    private var length: Int = _
+    @volatile private var running: Boolean = false
+    private var length: Int = 0
 
-    def progress(): Double = {
-        state match {
-            case s if s.max <= 0 => 0.0
-            case s => s.current.toDouble / s.max
-        }
-    }
+    def progress(): Double = state.current.toDouble / state.max
 
-    def progressIntegralPart(): Int = {
-        (progress * length).toInt
-    }
+    def progressIntegralPart(): Int = (progress * length).toInt
 
     def progressFractionalPart(): Int = {
         val p: Double = progress * length;
-        val fraction: Double = (p - floor(p)) * style.fractionSymbols.length
-        floor(fraction).toInt
+        val fraction: Double = (p - Math.floor(p)) * style.fractionSymbols.length
+        Math.floor(fraction).toInt
     }
 
     def eta(elapsed: Duration): String = {
         state match {
-            case s if s.max <= 0 || s.indefinite => "?"
             case s if s.current == 0 => "?"
             case s => Util.formatDuration(elapsed.dividedBy(s.current).multipliedBy(s.max - s.current))
         }
     }
 
     def percentage(): String = {
-        val res: String = state match {
-            case s if s.max <= 0 || s.indefinite => "?%"
-            case s => floor(100.0 * s.current / s.max).toInt.toString + "%"
-        }
-        Util.repeat(' ', 4 - res.length()) + res
+        val res: String = Math.floor(100.0 * state.current / state.max).toInt.toString + "%"
+        Util.repeat(' ', 4 - res.length) + res
     }
 
     def ratio(): String = {
-        val m: String = if (state.indefinite) "?" else state.max.toString
+        val m: String = state.max.toString
         val c: String = state.current.toString
-        Util.repeat(' ', m.length() - c.length()) + c + "/" + m
+        Util.repeat(' ', m.length - c.length) + c + "/" + m
     }
 
     def consoleWidth(): Int = {
@@ -57,13 +45,13 @@ class ProgressThread(val state: ProgressState, val style: ProgressBarStyle, val 
     def refresh(): Unit = {
         print('\r')
 
-        val currTime: DateTime = new DateTime()
-        val elapsed: Duration = new Duration(state.startTime, currTime)
+        val currentTime: DateTime = new DateTime()
+        val elapsed: Duration = new Duration(state.startTime, currentTime)
 
         val prefix: String = state.task + " " + percentage + " " + style.leftBracket
 
         val maxSuffixLength: Int = consoleWidth - ProgressThread.consoleRightMargin - prefix.length - 10;
-        var suffix: String = style.rightBracket + " " + ratio + " (" + Util.formatDuration(elapsed) + " / " + eta(elapsed) + ") " + state.extraMessage
+        var suffix: String = style.rightBracket + " " + ratio + " (" + Util.formatDuration(elapsed) + " / " + eta(elapsed) + ") "
         if (suffix.length > maxSuffixLength) suffix = suffix.substring(0, maxSuffixLength)
 
         length = consoleWidth - ProgressThread.consoleRightMargin - prefix.length - suffix.length
@@ -71,19 +59,12 @@ class ProgressThread(val state: ProgressState, val style: ProgressBarStyle, val 
         val sb: StringBuilder = new StringBuilder()
         sb.append(prefix)
 
-        if (state.indefinite) {
-            val pos: Int = (state.current % length).toInt
-            sb.append(Util.repeat(style.space, pos))
-            sb.append(style.block);
-            sb.append(Util.repeat(style.space, length - pos - 1))
+        sb.append(Util.repeat(style.block, progressIntegralPart))
+        if (state.current < state.max) {
+            sb.append(style.fractionSymbols.charAt(progressFractionalPart))
+            sb.append(Util.repeat(style.space, length - progressIntegralPart - 1))
         }
-        else {
-            sb.append(Util.repeat(style.block, progressIntegralPart()))
-            if (state.current < state.max) {
-                sb.append(style.fractionSymbols.charAt(progressFractionalPart()))
-                sb.append(Util.repeat(style.space, length - progressIntegralPart() - 1))
-            }
-        }
+
         sb.append(suffix)
         val line: String = sb.toString
 
@@ -103,11 +84,13 @@ class ProgressThread(val state: ProgressState, val style: ProgressBarStyle, val 
             }
             refresh()
         } catch {
-            case ex: InterruptedException => { }
+            case ex: InterruptedException => Unit
         }
     }
 }
 
 object ProgressThread {
+
     val consoleRightMargin: Int = 3
+
 }

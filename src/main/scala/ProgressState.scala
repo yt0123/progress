@@ -1,48 +1,31 @@
-package progressbar
+package progress.progressbar
 
 import org.joda.time._
 
-
-class ProgressState(val task: String, var max: Long = 0) {
-
-    var indefinite: Boolean = _
-    var extraMessage: String = _
+case class ProgressState( val task: String, val max: Long ) {
     var current: Long = 0
-    var startTime: DateTime = _
+    val startTime: DateTime = new DateTime()
     private val lock: AnyRef = new AnyRef()
 
-    def setAsDefinite(): Unit = lock.synchronized {
-        indefinite = false
-    }
+    require(max > 0)
 
-    def setAsIndefinite(): Unit = lock.synchronized {
-        indefinite = true
-    }
+    def init(dt: DateTime): Unit = lock.synchronized { startTime.plus(new Duration(dt, startTime)) }
 
-    def maxHint(n: Long): Unit = lock.synchronized {
-        max = n
-    }
-
-    def stepBy(n: Long): Unit = lock.synchronized {
+    def step(n: Long): Unit = lock.synchronized {
         current += n
-        if (current > max) max = current
+        if (current > max) current = max
     }
 
-    def stepTo(n: Long): Unit = lock.synchronized {
+    def jump(n: Long): Unit = lock.synchronized {
         current = n
-        if (current > max) max = current
+        if (current > max) current = max
     }
 
-    def setExtraMessage(msg: String): Unit = lock.synchronized {
-        extraMessage = msg
-    }
-
-    def getTask(): String = { task }
-
-    def getExtraMessage(): String = lock.synchronized { extraMessage }
-
-    def getCurrent(): Long = lock.synchronized { current }
+    def getTask(): String = lock.synchronized { task }
 
     def getMax(): Long = lock.synchronized { max }
 
+    def getCurrent(): Long = lock.synchronized { current }
+
+    def getStartTime(): DateTime = lock.synchronized { startTime }
 }

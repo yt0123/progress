@@ -1,4 +1,4 @@
-package progressbar
+package progress.progressbar
 
 import org.joda.time._
 
@@ -8,8 +8,9 @@ object Util {
         c match {
             case c if n <= 0 => ""
             case _ =>
-                val s: Seq[Char] = for (i <- 0 until n) yield c
-                s.mkString
+                val sb: StringBuilder = new StringBuilder()
+                for (i <- 0 until n) sb.append(c)
+                sb.toString
         }
     }
 

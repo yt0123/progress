@@ -1,89 +1,44 @@
-package progressbar
+package progress.progressbar
 
 import org.joda.time._
 
-class ProgressBar(task: String, initialMax: Long, updateIntervalMillis: Int, style: ProgressBarStyle) {
+final class ProgressBar( task: String, max: Long, updateIntervalMillis: Int, style: ProgressBarStyle ) {
 
-    private val state: ProgressState = new ProgressState(task, initialMax)
+    private val state: ProgressState = new ProgressState(task, max)
     private val target: ProgressThread = new ProgressThread(state, style, updateIntervalMillis)
     private val thread: Thread = new Thread(target)
 
-    def this(task: String, initialMax: Long) {
-        this(task, initialMax, 1000, ProgressBarStyle.UNICODE_BLOCK)
+    def this(task: String, max: Long) {
+        this(task, max, 1000, ProgressBarStyle.UNICODE_BLOCK)
     }
 
-    def this(task: String, initialMax: Long, style: ProgressBarStyle) {
-        this(task, initialMax, 1000, style)
+    def this(task: String, max: Long, style: ProgressBarStyle) {
+        this(task, max, 1000, style)
     }
 
-    def this(task: String, initialMax: Long, updateIntervalMillis: Int) {
-        this(task, initialMax, updateIntervalMillis, ProgressBarStyle.UNICODE_BLOCK)
+    def this(task: String, max: Long, updateIntervalMillis: Int) {
+        this(task, max, updateIntervalMillis, ProgressBarStyle.UNICODE_BLOCK)
     }
-
 
     def start(): ProgressBar = {
-        state.startTime = new DateTime()
+        state.init(new DateTime())
         thread.start()
         this
     }
 
-    def stepBy(n: Long): ProgressBar = {
-        state.stepBy(n)
-        this
-    }
+    def step(n: Long = 1): Unit = state.step(n)
 
-    def stepTo(n: Long): ProgressBar = {
-        state.stepTo(n)
-        this
-    }
+    def jump(n: Long): Unit = state.jump(n)
 
-    def step(): ProgressBar = {
-        state.stepBy(1)
-        this
-    }
-
-    def maxHint(n: Long): ProgressBar = {
-        if (n < 0) {
-            state.setAsIndefinite()
-        }
-        else {
-            state.setAsDefinite()
-            state.maxHint(n)
-        }
-        this
-    }
-
-    def stop(): ProgressBar = {
+    def stop(): Unit = {
         target.kill()
         try {
             thread.join()
             print('\n')
             Console.flush()
         } catch {
-            case ex: InterruptedException => { }
+            case ex: InterruptedException => Unit
         }
-        this
-    }
-
-    def setExtraMessage(msg: String): ProgressBar = {
-        state.setExtraMessage(msg)
-        this
-    }
-
-    def getCurrent(): Long = {
-        state.getCurrent()
-    }
-
-    def getMax(): Long = {
-        state.getMax()
-    }
-
-    def getTask(): String = {
-        state.getTask()
-    }
-
-    def getExtraMessage(): String = {
-        state.getExtraMessage()
     }
 
 }
